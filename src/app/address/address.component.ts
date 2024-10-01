@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { BrowserService } from '../browser.service';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
 export class AddressComponent {
   @ViewChild('search') searchElement: ElementRef = new ElementRef({});
 
+  constructor(private cdRef: ChangeDetectorRef) { }
   public browserService = inject(BrowserService);
 
   onKeyDownEvent(e: any) {
@@ -26,13 +27,21 @@ export class AddressComponent {
       e.currentTarget.blur();
       this.goToPage(value);
     }
+    this.cdRef.detectChanges();
   }
 
   onMouseDown(e: any) {
     this.searchElement.nativeElement.select();
+    this.cdRef.detectChanges();
   };
 
   goToPage(url: string) {
     this.browserService.goToPage(url);
+    this.cdRef.detectChanges();
+  }
+
+  onUrlChange(){
+    this.cdRef.detectChanges();
+    //this.browserService.onUrlChange();
   }
 }

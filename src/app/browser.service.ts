@@ -5,34 +5,47 @@ import { Injectable } from '@angular/core';
 })
 export class BrowserService {
 
-  url = 'https://amiens.unilasalle.fr';
+  url = 'https://unimakers.fr';
   canGoBack = false;
   canGoForward = false;
 
 // @ts-ignore
   electronAPI = window.electronAPI;
+  constructor(){
+    const that = this;
+    function onUrlChange(url : string){  
+      that.url = url;
+    }
+    this.electronAPI.onUrlChange(onUrlChange);
+    
+  }
 
-  toogleDevTool() {
+   toogleDevTool() {
     this.electronAPI.toogleDevTool();
+    //this.electronAPI.onUrlchange()
   }
 
   goBack() {
     this.electronAPI.goBack();
     this.updateHistory();
+    //this.electronAPI.onUrlchange()
   }
 
   goForward() {
     this.electronAPI.goForward();
     this.updateHistory();
+    //this.electronAPI.onUrlchange()
   }
 
   refresh() {
     this.electronAPI.refresh();
+    //this.electronAPI.onUrlchange()
   }
 
   goToPage(url: string) {
     this.electronAPI.goToPage(url)
       .then(() => this.updateHistory());
+    //this.electronAPI.onUrlchange()
   }
 
   setToCurrentUrl() {
@@ -40,6 +53,7 @@ export class BrowserService {
       .then((url :string) => {
         this.url = url;
       });
+    //this.electronAPI.onUrlchange()
   }
 
   updateHistory() {
@@ -50,5 +64,8 @@ export class BrowserService {
 
     this.electronAPI.canGoForward()
       .then((canGoForward : boolean) => this.canGoForward = canGoForward);
+    
+    //this.electronAPI.onUrlchange()
   }
+
 }

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { BrowserService } from '../browser.service';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,5 +11,11 @@ import { MatButtonModule } from '@angular/material/button';
   styleUrl: './forward.component.css'
 })
 export class ForwardComponent {
+
+  constructor(private cdRef: ChangeDetectorRef) { }
   public browserService = inject(BrowserService);
+
+  onUrlchange(){
+    this.cdRef.detectChanges();
+  }
 }

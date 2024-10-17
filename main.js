@@ -1,6 +1,8 @@
 const { app, WebContentsView, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('fs');
+const { visitLexicalEnvironment } = require('typescript');
+
 
 
 app.whenReady().then(() => {
@@ -91,29 +93,110 @@ app.whenReady().then(() => {
     win.setTitle(`Navigating: ${newUrl}`);  // Mettre à jour le titre de la fenêtre
   });
 
-  ipcMain.handle('capture-screen', async () => {
-    if (!win) {
-      throw new Error('La fenêtre principale n\'est pas disponible');
+  ipcMain.handle('capture-webview', async () => {
+    if (!view) {
+      throw new Error('La webview n\'est pas disponible');
     }
 
-    const image = await view.webContents.capturePage(); // Capture l'écran actuel
+    // Injection du script de capture dans la webview
+    const result = await view.webContents.executeJavaScript(`
+       (async function() {
+        const canvas = document.createElement('canvas');
+        const width = document.documentElement.scrollWidth;
+        const height = document.documentElement.scrollHeight;
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
 
-    // Ouvrir une boîte de dialogue pour demander où sauvegarder la capture d'écran
-    const { filePath } = await dialog.showSaveDialog(win, {
-      title: 'Sauvegarder la capture d\'écran',
-      defaultPath: path.join(app.getPath('pictures'), `screenshot-${new Date().toISOString().replace(/[-:.]/g, '')}.png`),
-      filters: [
-        { name: 'Images', extensions: ['png'] }
-      ]
-    });
+        // Fonction pour capturer les ressources externes comme les URL, les images et les icônes
+        function captureResources(element) {
+          const computedStyle = window.getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          
+          // Capturer les images de fond (background-image)
+          const backgroundImage = computedStyle.backgroundImage;
+          if (backgroundImage && backgroundImage !== 'none') {
+            const imageUrl = backgroundImage.slice(5, -2);
+            const img = new Image();
+            img.src = imageUrl;
+            context.drawImage(img, rect.left, rect.top, rect.width, rect.height);
+          }
 
-    // Si l'utilisateur annule la sauvegarde, filePath sera undefined
-    if (filePath) {
-      // Sauvegarder l'image à l'emplacement choisi
-      fs.writeFileSync(filePath, image.toPNG());
-      return filePath; // Renvoie le chemin de l'image
-    } else {
-      return null; // Renvoie null si l'utilisateur a annulé
-    }
+          // Capturer les images <img>
+          if (element.tagName === 'IMG' && element.src) {
+            const img = new Image();
+            img.src = element.src;
+            context.drawImage(img, rect.left, rect.top, rect.width, rect.height);
+          }
+
+          // Capturer les icônes <link rel="icon">
+          if (element.tagName === 'LINK' && element.rel === 'icon' && element.href) {
+            const icon = new Image();
+            icon.src = element.href;
+            context.drawImage(icon, rect.left, rect.top, 32, 32); // Dessiner l'icône à une taille arbitraire
+          }
+
+          // Capturer les liens URL
+          if (element.tagName === 'A' && element.href) {
+            context.fillStyle = 'blue'; // Affiche les liens en bleu
+            context.fillText(element.href, rect.left, rect.top + 16);
+          }
+        }
+
+        // Fonction pour capturer le DOM, le CSS et les ressources externes
+        function drawElement(element) {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+
+          // Appliquer le modèle de boîte
+          const paddingTop = parseFloat(style.paddingTop);
+          const paddingLeft = parseFloat(style.paddingLeft);
+          const borderWidth = parseFloat(style.borderWidth) || 0;
+
+          // Dessiner l'arrière-plan
+          if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+            context.fillStyle = style.backgroundColor;
+            context.fillRect(rect.left, rect.top, rect.width, rect.height);
+          }
+
+          // Appliquer les bordures
+          if (borderWidth > 0) {
+            context.strokeStyle = style.borderColor;
+            context.lineWidth = borderWidth;
+            context.strokeRect(rect.left, rect.top, rect.width, rect.height);
+          }
+
+          // Dessiner le texte avec les polices et styles
+          if (element.innerText) {
+            context.fillStyle = style.color || '#000';
+            context.font = \`\${style.fontWeight} \${style.fontSize} \${style.fontFamily}\`;
+            context.fillText(
+              element.innerText,
+              rect.left + paddingLeft,
+              rect.top + paddingTop + parseFloat(style.fontSize)
+            );
+          }
+
+          // Appeler la fonction pour capturer les ressources
+          captureResources(element);
+        }
+
+        // Parcourir et dessiner chaque élément du DOM
+        function drawDOM(element) {
+          drawElement(element);
+
+          for (let i = 0; i < element.children.length; i++) {
+            drawDOM(element.children[i]);
+          }
+        }
+
+        drawDOM(document.body); // Démarrer à partir du body
+
+        // Retourner l'image finale sous forme de base64
+        return canvas.toDataURL('image/png');
+      })();
+    `);
+
+    return result; // Retourne l'image capturée en base64
   });
-})
+});

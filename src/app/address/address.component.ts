@@ -18,6 +18,8 @@ export class AddressComponent {
   constructor(private cdRef: ChangeDetectorRef) { }
   public browserService = inject(BrowserService);
 
+  url = this.browserService.url;
+
   onKeyDownEvent(e: any) {
     if (e.key === 'Escape') {
       e.currentTarget.blur();
@@ -41,6 +43,7 @@ export class AddressComponent {
   }
 
   onUrlChange(){
+    this.url
     this.cdRef.detectChanges();
     //this.browserService.onUrlChange();
   }

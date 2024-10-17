@@ -8,6 +8,7 @@ import { RefreshComponent } from './refresh/refresh.component';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { HomeComponent } from './home/home.component';
 import { ScreenshotComponent } from './screenshot/screenshot.component';
+import { DomCaptureComponent } from './dom-capture/dom-capture.component'; 
 
 @Component({
   selector: 'app-root',
@@ -21,7 +22,8 @@ import { ScreenshotComponent } from './screenshot/screenshot.component';
     ForwardComponent, 
     RefreshComponent, 
     HomeComponent,
-    ScreenshotComponent
+    ScreenshotComponent,
+    DomCaptureComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']  // Correction ici

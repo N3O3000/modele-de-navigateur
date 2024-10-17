@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   canGoBack: () => ipcRenderer.invoke('can-go-back'),
   goToPage: (url) => ipcRenderer.invoke('go-to-page', url),
   currentUrl: () => ipcRenderer.invoke('current-url'),
-  captureScreen: () => ipcRenderer.invoke('capture-screen')
+  captureScreen: () => ipcRenderer.invoke('capture-screen'),
+  captureWebview: () => ipcRenderer.invoke('capture-webview') // Capture la webview
 
 })
